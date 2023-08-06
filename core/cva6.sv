@@ -147,6 +147,17 @@ module cva6 import ariane_pkg::*; #(
   exception_t               fpu_exception_ex_id;
   // CSR
   logic                     csr_valid_id_ex;
+  // CMO
+  logic                     cmo_valid_id_ex;
+  logic                     cmo_ready_ex_id;
+  logic [TRANS_ID_BITS-1:0] cmo_trans_id_ex_id;
+  riscv::xlen_t             cmo_result_ex_id;
+  logic                     cmo_valid_ex_id;
+  exception_t               cmo_exception_ex_id;
+  cmo_req_t                 cmo_ic_req;
+  cmo_resp_t                cmo_ic_resp;
+  cmo_req_t                 cmo_dc_req;
+  cmo_resp_t                cmo_dc_resp;
   // CVXIF
   logic [TRANS_ID_BITS-1:0] x_trans_id_ex_id;
   riscv::xlen_t             x_result_ex_id;
@@ -325,17 +336,30 @@ module cva6 import ariane_pkg::*; #(
   exception_t [NR_WB_PORTS-1:0]              ex_ex_ex_id; // exception from execute, ex_stage to id_stage
   logic [NR_WB_PORTS-1:0]                    wt_valid_ex_id;
 
-  if (CVXIF_PRESENT) begin
-    assign trans_id_ex_id = {x_trans_id_ex_id, flu_trans_id_ex_id, load_trans_id_ex_id, store_trans_id_ex_id, fpu_trans_id_ex_id};
-    assign wbdata_ex_id   = {x_result_ex_id, flu_result_ex_id, load_result_ex_id, store_result_ex_id, fpu_result_ex_id};
-    assign ex_ex_ex_id    = {x_exception_ex_id, flu_exception_ex_id, load_exception_ex_id, store_exception_ex_id, fpu_exception_ex_id};
-    assign wt_valid_ex_id = {x_valid_ex_id, flu_valid_ex_id, load_valid_ex_id, store_valid_ex_id, fpu_valid_ex_id};
-  end else begin
-    assign trans_id_ex_id = {flu_trans_id_ex_id, load_trans_id_ex_id, store_trans_id_ex_id, fpu_trans_id_ex_id};
-    assign wbdata_ex_id   = {flu_result_ex_id, load_result_ex_id, store_result_ex_id, fpu_result_ex_id};
-    assign ex_ex_ex_id    = {flu_exception_ex_id, load_exception_ex_id, store_exception_ex_id, fpu_exception_ex_id};
-    assign wt_valid_ex_id = {flu_valid_ex_id, load_valid_ex_id, store_valid_ex_id, fpu_valid_ex_id};
-  end
+  assign trans_id_ex_id[3:0] = {flu_trans_id_ex_id, load_trans_id_ex_id, store_trans_id_ex_id, fpu_trans_id_ex_id};
+  assign wbdata_ex_id[3:0]   = {flu_result_ex_id, load_result_ex_id, store_result_ex_id, fpu_result_ex_id};
+  assign ex_ex_ex_id[3:0]    = {flu_exception_ex_id, load_exception_ex_id, store_exception_ex_id, fpu_exception_ex_id};
+  assign wt_valid_ex_id[3:0] = {flu_valid_ex_id, load_valid_ex_id, store_valid_ex_id, fpu_valid_ex_id};
+
+  generate
+    localparam int CVXIF_WB_PORT_ID = 4;
+    localparam int CMO_WB_PORT_ID   = CVXIF_WB_PORT_ID + (CVXIF_PRESENT ? 1 : 0);
+
+    if (CVXIF_PRESENT) begin
+      assign trans_id_ex_id[CVXIF_WB_PORT_ID] = x_trans_id_ex_id;
+      assign wbdata_ex_id[CVXIF_WB_PORT_ID] = x_result_ex_id;
+      assign ex_ex_ex_id[CVXIF_WB_PORT_ID] = x_exception_ex_id;
+      assign wt_valid_ex_id[CVXIF_WB_PORT_ID] = x_valid_ex_id;
+    end
+
+    if (CMO_PRESENT) begin
+      assign trans_id_ex_id[CMO_WB_PORT_ID] = cmo_trans_id_ex_id;
+      assign wbdata_ex_id[CMO_WB_PORT_ID] = cmo_result_ex_id;
+      assign ex_ex_ex_id[CMO_WB_PORT_ID] = cmo_exception_ex_id;
+      assign wt_valid_ex_id[CMO_WB_PORT_ID] = cmo_valid_ex_id;
+    end
+  endgenerate
+
   // ---------
   // Issue
   // ---------
@@ -380,6 +404,9 @@ module cva6 import ariane_pkg::*; #(
     .fpu_rm_o                   ( fpu_rm_id_ex                 ),
     // CSR
     .csr_valid_o                ( csr_valid_id_ex              ),
+    // CMO
+    .cmo_ready_i                ( cmo_ready_ex_id              ),
+    .cmo_valid_o                ( cmo_valid_id_ex              ),
     // CVXIF
     .x_issue_valid_o            ( x_issue_valid_id_ex          ),
     .x_issue_ready_i            ( x_issue_ready_ex_id          ),
@@ -439,6 +466,17 @@ module cva6 import ariane_pkg::*; #(
     .csr_valid_i            ( csr_valid_id_ex             ),
     .csr_addr_o             ( csr_addr_ex_csr             ),
     .csr_commit_i           ( csr_commit_commit_ex        ), // from commit
+    // CMO
+    .cmo_ready_o            ( cmo_ready_ex_id             ),
+    .cmo_valid_i            ( cmo_valid_id_ex             ),
+    .cmo_trans_id_o         ( cmo_trans_id_ex_id          ),
+    .cmo_exception_o        ( cmo_exception_ex_id         ),
+    .cmo_result_o           ( cmo_result_ex_id            ),
+    .cmo_valid_o            ( cmo_valid_ex_id             ),
+    .cmo_dc_req_o           ( cmo_dc_req                  ),
+    .cmo_dc_resp_i          ( cmo_dc_resp                 ),
+    .cmo_ic_req_o           ( cmo_ic_req                  ),
+    .cmo_ic_resp_i          ( cmo_ic_resp                 ),
     // MULT
     .mult_valid_i           ( mult_valid_id_ex            ),
     // LSU
@@ -723,6 +761,9 @@ module cva6 import ariane_pkg::*; #(
     .axi_resp_i            ( axi_resp_i                  )
 `endif
   );
+    assign cmo_dc_resp = '0;
+    assign cmo_ic_resp = '0;
+    
 `else
 
   std_cache_subsystem #(

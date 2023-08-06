@@ -35,6 +35,8 @@ def setup_parser_config_generator():
                       help="FVecEn enable ? 1 : enable, 0 : disable")
   parser.add_argument("--cvxif", type=int, default=None, choices=[0,1],
                       help="CoreV-X-Interface enable ? 1 : enable, 0 : disable")
+  parser.add_argument("--cmo", type=int, default=None, choices=[0,1],
+                      help="Cache Management Operation enable ? 1 : enable, 0 : disable")
   parser.add_argument("--c_ext", type=int, default=None, choices=[0,1],
                       help="C extension enable ? 1 : enable, 0 : disable")
   parser.add_argument("--a_ext", type=int, default=None, choices=[0,1],
@@ -63,6 +65,7 @@ MapArgsToParameter={
   "F8En" : "CVA6ConfigF8En",
   "FVecEn" : "CVA6ConfigFVecEn",
   "cvxif" : "CVA6ConfigCvxifEn",
+  "cmo" : "CVA6ConfigCMOEn",
   "c_ext" : "CVA6ConfigCExtEn",
   "a_ext" : "CVA6ConfigAExtEn",
   "iuser_en" : "CVA6ConfigFetchUserEn",

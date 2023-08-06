@@ -227,9 +227,11 @@ package ariane_pkg;
     localparam REG_ADDR_SIZE = 6;
 
     localparam bit CVXIF_PRESENT = cva6_config_pkg::CVA6ConfigCvxifEn;
+    localparam bit CMO_PRESENT   = cva6_config_pkg::CVA6ConfigCMOEn;
 
-    // when cvx interface is present, use an additional writeback port
-    localparam NR_WB_PORTS = CVXIF_PRESENT ? 5 : 4;
+
+    // when cvx and cmo interfaces are present, use an additional writeback port
+    localparam NR_WB_PORTS = 4 + (CVXIF_PRESENT ? 1 : 0) + (CMO_PRESENT ? 1 : 0);
 
     // Read ports for general purpose register files
     localparam NR_RGPR_PORTS = 2;
@@ -390,6 +392,7 @@ package ariane_pkg;
         FPU,       // 7
         FPU_VEC,   // 8
         CVXIF      // 9
+        CMO        // 10 
     } fu_t;
 
     localparam EXC_OFF_RST      = 8'h80;
@@ -487,6 +490,9 @@ package ariane_pkg;
                                SLTS, SLTU,
                                // CSR functions
                                MRET, SRET, DRET, ECALL, WFI, FENCE, FENCE_I, SFENCE_VMA, CSR_WRITE, CSR_READ, CSR_SET, CSR_CLEAR,
+                               // CMO functions
+                               CMO_CLEAN, CMO_FLUSH, CMO_INVAL, CMO_ZERO,
+                               CMO_PREFETCH_I, CMO_PREFETCH_R, CMO_PREFETCH_W,
                                // LSU functions
                                LD, SD, LW, LWU, SW, LH, LHU, SH, LB, SB, LBU,
                                // Atomic Memory Operations
@@ -805,6 +811,32 @@ package ariane_pkg;
         riscv::xlen_t                  data_rdata;
         logic [DCACHE_USER_WIDTH-1:0]  data_ruser;
     } dcache_req_o_t;
+
+    // CMO request to cache.
+    typedef enum logic [2:0] {
+        CMO_NONE       = 3'b000,
+        CMO_CLEAN      = 3'b001,
+        CMO_FLUSH      = 3'b010,
+        CMO_INVAL      = 3'b011,
+        CMO_ZERO       = 3'b100,
+        CMO_PREFETCH_I = 3'b101,
+        CMO_PREFETCH_R = 3'b110,
+        CMO_PREFETCH_W = 3'b111,
+    } cmo_t;
+
+    typedef struct packed {
+        logic        req;                   // this request is valid
+        cmo_t        cmo_op;                // Cache Management Operation to perform
+        logic [TRANS_ID_BITS-1:0] trans_id; // index of the scoreboard entry
+        logic [63:0] address;               // target address
+    } cmo_req_t;
+
+    // CMO response from cache.
+    typedef struct packed {
+        logic        req_ready;  // target cache accepts the request
+        logic [TRANS_ID_BITS-1:0] trans_id; // index of the scoreboard entry
+        logic        ack;    // response is valid
+    } cmo_resp_t;
 
     // ----------------------
     // Arithmetic Functions

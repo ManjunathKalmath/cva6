@@ -56,6 +56,10 @@ module issue_stage import ariane_pkg::*; #(
 
     output logic                                     csr_valid_o,
 
+    //CMO
+    input  logic                                     cmo_ready_i,
+    output logic                                     cmo_valid_o,
+
     // CVXIF
     //Issue interface
     output logic                                     x_issue_valid_o,

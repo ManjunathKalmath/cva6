@@ -62,6 +62,9 @@ module issue_read_operands import ariane_pkg::*; #(
     output logic [2:0]                             fpu_rm_o,         // FP rm field from instr.
     // CSR
     output logic                                   csr_valid_o,      // Output is valid
+    // CMO
+    input  logic                                   cmo_ready_i,      // FU is ready
+    output logic                                   cmo_valid_o,      // Output is valid
     // CVXIF
     output logic                                   cvxif_valid_o,
     input  logic                                   cvxif_ready_i,
@@ -92,6 +95,7 @@ module issue_read_operands import ariane_pkg::*; #(
     logic [2:0]       fpu_rm_q;
     logic          lsu_valid_q;
     logic          csr_valid_q;
+    logic          cmo_valid_q;
     logic       branch_valid_q;
     logic        cvxif_valid_q;
     logic [31:0] cvxif_off_instr_q;
@@ -122,6 +126,7 @@ module issue_read_operands import ariane_pkg::*; #(
     assign branch_valid_o      = branch_valid_q;
     assign lsu_valid_o         = lsu_valid_q;
     assign csr_valid_o         = csr_valid_q;
+    assign cmo_valid_o         = cmo_valid_q;
     assign mult_valid_o        = mult_valid_q;
     assign fpu_valid_o         = fpu_valid_q;
     assign fpu_fmt_o           = fpu_fmt_q;
@@ -146,6 +151,8 @@ module issue_read_operands import ariane_pkg::*; #(
                 fu_busy = ~lsu_ready_i;
             CVXIF:
                 fu_busy = ~cvxif_ready_i;
+            CMO:
+               fu_busy = ~cmo_ready_i;
             default:
                 fu_busy = 1'b0;
         endcase
@@ -262,6 +269,7 @@ module issue_read_operands import ariane_pkg::*; #(
         fpu_fmt_q      <= 2'b0;
         fpu_rm_q       <= 3'b0;
         csr_valid_q    <= 1'b0;
+        cmo_valid_q    <= 1'b0;
         branch_valid_q <= 1'b0;
       end else begin
         alu_valid_q    <= 1'b0;
@@ -271,6 +279,7 @@ module issue_read_operands import ariane_pkg::*; #(
         fpu_fmt_q      <= 2'b0;
         fpu_rm_q       <= 3'b0;
         csr_valid_q    <= 1'b0;
+        cmo_valid_q    <= 1'b0;
         branch_valid_q <= 1'b0;
         // Exception pass through:
         // If an exception has occurred simply pass it through
@@ -313,6 +322,7 @@ module issue_read_operands import ariane_pkg::*; #(
             mult_valid_q   <= 1'b0;
             fpu_valid_q    <= 1'b0;
             csr_valid_q    <= 1'b0;
+            cmo_valid_q    <= 1'b0;
             branch_valid_q <= 1'b0;
         end
       end
