@@ -311,6 +311,9 @@ module issue_read_operands import ariane_pkg::*; #(
                 CSR: begin
                     csr_valid_q    <= 1'b1;
                 end
+                CMO: begin
+                    cmo_valid_q    <= 1'b1;
+                end
                 default:;
             endcase
         end
