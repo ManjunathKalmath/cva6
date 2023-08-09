@@ -249,6 +249,7 @@ module decoder import ariane_pkg::*; (
                             if (CMO_PRESENT) begin
                                 instruction_o.fu = CMO;
                                 instruction_o.rs1 = instr.itype.rs1;
+                                instruction_o.rd  = '0;
                                 case (instr.itype.imm)
                                     12'b000000000000: instruction_o.op = ariane_pkg::CMO_INVAL;
                                     12'b000000000001: instruction_o.op = ariane_pkg::CMO_CLEAN;
@@ -628,6 +629,7 @@ module decoder import ariane_pkg::*; (
                         3'b110: begin
                             if (CMO_PRESENT && (instr.itype.rd == 5'b0)) begin
                                 instruction_o.fu = CMO;
+                                instruction_o.rs1 = instr.stype.rs1;
                                 instruction_o.rd = '0;
                                 imm_select = SIMM;
                                 case (instr.stype.rs2)
