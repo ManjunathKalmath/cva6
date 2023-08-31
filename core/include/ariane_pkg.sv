@@ -391,7 +391,7 @@ package ariane_pkg;
         CSR,       // 6
         FPU,       // 7
         FPU_VEC,   // 8
-        CVXIF      // 9
+        CVXIF,      // 9
         CMO        // 10 
     } fu_t;
 
@@ -821,7 +821,7 @@ package ariane_pkg;
         CMO_ZERO       = 3'b100,
         CMO_PREFETCH_I = 3'b101,
         CMO_PREFETCH_R = 3'b110,
-        CMO_PREFETCH_W = 3'b111,
+        CMO_PREFETCH_W = 3'b111
     } cmo_t;
 
     typedef struct packed {
